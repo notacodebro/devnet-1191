@@ -9,8 +9,8 @@ import urllib3
 import pandas as pd
 from tabulate import tabulate
 
-BASE_URL = 'https://172.17.7.200'
-#BASE_URL = 'https://sandboxdnac.cisco.com'
+#BASE_URL = 'https://172.17.7.200'
+BASE_URL = 'https://sandboxdnac.cisco.com'
 POPPED_TAGS = ['scoreList', 'starttime', 'endtime', 'maintenanceAffectedClientCount', 'duidCount', 'randomMacCount']
 urllib3.disable_warnings()
 
@@ -51,9 +51,9 @@ def get_hosts(token_header):
 
 def parser():
     _parser = argparse.ArgumentParser()
-    _parser.add_argument('--username', help='community string for snmp', required=True)
-    _parser.add_argument('--mac', help='community string for snmp', required=False)
-    _parser.add_argument('--interactive', help='community string for snmp', required=False)
+    _parser.add_argument('--username', help='username for access', required=True)
+    _parser.add_argument('--mac', help='Specific mac address to search for', required=False)
+    _parser.add_argument('--interactive', help='Future Interactive mode', required=False)
     args = _parser.parse_args()
     return args
 
@@ -90,12 +90,14 @@ def main():
     token_header = {'X-Auth-Token': token, 'Content-Type': 'application/json'}
     host_macs, meta = get_hosts(token_header)
     if args.mac:
-        results = get_client(token_header, args.mac)
+        host_macs = []
+        host_macs.append(args.mac)
+        get_client_health(token_header, host_macs)
     else:
         print('Please wait....')
         results =  get_clients(token_header)
-    printer(results, meta)
-    ans = input('Please press any key to print client details with Poor/Fair health...\n\n')
-    get_client_health(token_header, host_macs)
+        printer(results, meta)
+        ans = input('Please press any key to print client details with Poor/Fair health...\n\n')
+        get_client_health(token_header, host_macs)
 
 main()
