@@ -1,0 +1,14 @@
+---
+- name: Change local admin password
+  hosts: iosxe
+  gather_facts: no
+  collections:
+    - cisco.ios
+  tasks:
+
+    - name: change password
+      ios_user:
+        name: admin
+        configured_password: "newpass"
+        update_password: always
+        state: present
