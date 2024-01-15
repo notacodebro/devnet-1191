@@ -16,56 +16,58 @@ POPPED_TAGS = ['scoreList', 'starttime', 'endtime', 'maintenanceAffectedClientCo
 urllib3.disable_warnings()
 
 def authentication(material):
-    url = f'{BASE_URL}/dna/system/api/v1/auth/token'
-    headers = {"Content-Type":"application/json", "Accept":"application/json", "Authorization":f"Basic {material}"}
-    request = requests.post(url, headers=headers, verify=False)
+    _url = f'{BASE_URL}/dna/system/api/v1/auth/token'
+    _headers = {"Content-Type":"application/json", "Accept":"application/json", "Authorization":f"Basic {material}"}
+    request = requests.post(_url, headers=_headers, verify=False)
     return request
 
 def get_clients(token_header):
     meta = 'client_health'
-    client_health = f'{BASE_URL}/dna/intent/api/v1/client-health' 
-    request = requests.get(client_health, headers=token_header, verify=False)
+    _url = f'{BASE_URL}/dna/intent/api/v1/client-health' 
+    request = requests.get(_url, headers=token_header, verify=False)
     return json.loads(request.text), meta
  
+ def get_hosts():
+    pass
 def parser():
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--username', help='community string for snmp', required=True)
-    parser.add_argument('--mac', help='community string for snmp', required=False)
-    parser.add_argument('--interactive', help='community string for snmp', required=False)
-    args = parser.parse_args()
+    _parser = argparse.ArgumentParser()
+    _parser.add_argument('--username', help='community string for snmp', required=True)
+    _parser.add_argument('--mac', help='community string for snmp', required=False)
+    _parser.add_argument('--interactive', help='community string for snmp', required=False)
+    args = _parser.parse_args()
     return args
 
 def printer(results, meta):
-    popped_tags = ['scoreList', 'starttime', 'endtime', 'maintenanceAffectedClientCount', 'duidCount', 'randomMacCount']
-    results = results['response'][0]['scoreDetail']
+    _popped_tags = ['scoreList', 'starttime', 'endtime', 'maintenanceAffectedClientCount', 'duidCount', 'randomMacCount']
+    _results = results['response'][0]['scoreDetail']
     try: 
-        for items in results[1]['scoreList']:
+        for items in _results[1]['scoreList']:
             items.pop('scoreList')
     except KeyError:
         pass
-    pdresult = pd.json_normalize(results[0])
-    pdresult_specific = pd.json_normalize(results[1]['scoreList'])
-    for items in popped_tags:
+    _pdresult = pd.json_normalize(_results[0])
+    _pdresult_specific = pd.json_normalize(_results[1]['scoreList'])
+    for items in _popped_tags:
         try:
-            pdresult.pop(items)
-            pdresult_specific.pop(items)
+            _pdresult.pop(items)
+            _pdresult_specific.pop(items)
         except KeyError:
             pass
     print()
     print('Global Client Health Results')
     print('*'*64)
-    print(tabulate(pdresult, headers='keys'))
+    print(tabulate(_pdresult, headers='keys'))
     print('Specific Health Results')
     print('*'*64)
-    print(tabulate(pdresult_specific, headers='keys'))
+    print(tabulate(_pdresult_specific, headers='keys'))
 
 def main():
     print('*'*64)
     print('Welcome to the Catalyst Center Client Health Check Tool')
     print('*'*64)
     args = parser()
-    password = getpass.getpass() 
-    material = base64.b64encode(f'{args.username}:{password}'.encode())
+    _password = getpass.getpass() 
+    material = base64.b64encode(f'{args.username}:{_password}'.encode())
     material = material.decode()
     token = authentication(material)
     token = token.json()['Token']
