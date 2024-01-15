@@ -100,4 +100,6 @@ def main():
         ans = input('Please press any key to print client details with Poor/Fair health...\n\n')
         get_client_health(token_header, host_macs)
 
-main()
+
+if __name__ == '__main__': 
+    main()
