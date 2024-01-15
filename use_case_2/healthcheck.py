@@ -27,8 +27,14 @@ def get_clients(token_header):
     request = requests.get(_url, headers=token_header, verify=False)
     return json.loads(request.text), meta
  
- def get_hosts():
-    pass
+def get_hosts(token_header):
+    host_macs = []
+    _url = f'{BASE_URL}/api/v1/host'
+    response = requests.get(_url, headers=token_header, verify=False)
+    for items in json.loads(response.text)['response']:
+        host_macs.append(items['hostMac'])
+    return host_macs
+
 def parser():
     _parser = argparse.ArgumentParser()
     _parser.add_argument('--username', help='community string for snmp', required=True)
@@ -60,6 +66,7 @@ def printer(results, meta):
     print('Specific Health Results')
     print('*'*64)
     print(tabulate(_pdresult_specific, headers='keys'))
+    return
 
 def main():
     print('*'*64)
@@ -72,6 +79,7 @@ def main():
     token = authentication(material)
     token = token.json()['Token']
     token_header = {'X-Auth-Token': token, 'Content-Type': 'application/json'}
+    host_macs = get_hosts(token_header)
     if args.mac:
         results, meta = get_client(token_header, args.mac)
     else:
@@ -79,6 +87,9 @@ def main():
         results, meta =  get_clients(token_header)
     
     printer(results, meta)
+    ans = input('Please press any key to print client details with Poor/Fair health...')
+
+    print(host_macs)
 
 
 main()
