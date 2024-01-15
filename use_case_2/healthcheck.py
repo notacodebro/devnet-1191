@@ -9,31 +9,45 @@ import urllib3
 import pandas as pd
 from tabulate import tabulate
 
-
-#BASE_URL = 'https://172.17.7.200'
-BASE_URL = 'https://sandboxdnac.cisco.com'
+BASE_URL = 'https://172.17.7.200'
+#BASE_URL = 'https://sandboxdnac.cisco.com'
 POPPED_TAGS = ['scoreList', 'starttime', 'endtime', 'maintenanceAffectedClientCount', 'duidCount', 'randomMacCount']
 urllib3.disable_warnings()
 
 def authentication(material):
     _url = f'{BASE_URL}/dna/system/api/v1/auth/token'
     _headers = {"Content-Type":"application/json", "Accept":"application/json", "Authorization":f"Basic {material}"}
-    request = requests.post(_url, headers=_headers, verify=False)
-    return request
+    response = requests.post(_url, headers=_headers, verify=False)
+    return response
 
 def get_clients(token_header):
-    meta = 'client_health'
     _url = f'{BASE_URL}/dna/intent/api/v1/client-health' 
-    request = requests.get(_url, headers=token_header, verify=False)
-    return json.loads(request.text), meta
- 
+    response = requests.get(_url, headers=token_header, verify=False)
+    return json.loads(response.text)
+
+def get_client_health(token_header, host_macs): 
+    print('Please wait.....')
+    for mac in host_macs:
+        _url = f'{BASE_URL}/dna/intent/api/v1/client-detail?macAddress={mac}'
+        response = requests.get(_url, headers=token_header, verify=False)
+        response = json.loads(response.text)
+        if response['detail']['healthScore'][0]['score'] <=7:
+            _pdresult = pd.json_normalize(response['detail']['healthScore'])
+            print(f'\n\nClient Mac Address: {mac}')
+            print(tabulate(_pdresult, headers='keys', tablefmt='heavy_grid'))
+        else:
+            print('.', end = " ", flush=True)
+            pass 
+    print('\nNo other clients with poor or fair scores')
+            
 def get_hosts(token_header):
+    meta = 'host'
     host_macs = []
     _url = f'{BASE_URL}/api/v1/host'
     response = requests.get(_url, headers=token_header, verify=False)
     for items in json.loads(response.text)['response']:
         host_macs.append(items['hostMac'])
-    return host_macs
+    return host_macs, meta
 
 def parser():
     _parser = argparse.ArgumentParser()
@@ -46,26 +60,21 @@ def parser():
 def printer(results, meta):
     _popped_tags = ['scoreList', 'starttime', 'endtime', 'maintenanceAffectedClientCount', 'duidCount', 'randomMacCount']
     _results = results['response'][0]['scoreDetail']
-    try: 
-        for items in _results[1]['scoreList']:
-            items.pop('scoreList')
-    except KeyError:
-        pass
     _pdresult = pd.json_normalize(_results[0])
-    _pdresult_specific = pd.json_normalize(_results[1]['scoreList'])
+    _pdresult_specific = pd.json_normalize(_results[1]['scoreList']) 
     for items in _popped_tags:
         try:
-            _pdresult.pop(items)
             _pdresult_specific.pop(items)
+            _pdresult.pop(items)
         except KeyError:
             pass
     print()
-    print('Global Client Health Results')
+    print('\nGlobal Client Health Results')
     print('*'*64)
-    print(tabulate(_pdresult, headers='keys'))
-    print('Specific Health Results')
+    print(tabulate(_pdresult, headers='keys', tablefmt='heavy_grid'))
+    print('\nSpecific Health Results')
     print('*'*64)
-    print(tabulate(_pdresult_specific, headers='keys'))
+    print(tabulate(_pdresult_specific, headers='keys', tablefmt='heavy_grid'))
     return
 
 def main():
@@ -79,17 +88,14 @@ def main():
     token = authentication(material)
     token = token.json()['Token']
     token_header = {'X-Auth-Token': token, 'Content-Type': 'application/json'}
-    host_macs = get_hosts(token_header)
+    host_macs, meta = get_hosts(token_header)
     if args.mac:
-        results, meta = get_client(token_header, args.mac)
+        results = get_client(token_header, args.mac)
     else:
         print('Please wait....')
-        results, meta =  get_clients(token_header)
-    
+        results =  get_clients(token_header)
     printer(results, meta)
-    ans = input('Please press any key to print client details with Poor/Fair health...')
-
-    print(host_macs)
-
+    ans = input('Please press any key to print client details with Poor/Fair health...\n\n')
+    get_client_health(token_header, host_macs)
 
 main()
