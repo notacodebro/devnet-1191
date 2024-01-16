@@ -1,8 +1,8 @@
 # Health Check Script
-A health check script to make our day much more pleasant and to be used for the daily health check. The iniital function of this scripts are as follows:
+A daily health check script to make our day much more pleasant. The inital functions of this scripts are as follows:
 * Checks Catalyst Center for overall network health
-* Checks each client reporting a health score below 6 and reports relavant details
-* individual client check 
+* Checks each client reporting a health score below 6 and reports relevant details
+* Individual client check 
 
 
 # Usage   
