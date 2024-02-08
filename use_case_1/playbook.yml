@@ -9,6 +9,6 @@
     - name: change password
       ios_user:
         name: admin
-        configured_password: "newpass"
+        configured_password: "C1sco12345"
         update_password: always
         state: present
